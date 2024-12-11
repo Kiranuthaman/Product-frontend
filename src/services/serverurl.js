@@ -1,0 +1,1 @@
+export const serverUrl = "https://product-backend-4mz6.onrender.com"
