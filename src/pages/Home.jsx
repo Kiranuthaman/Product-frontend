@@ -7,7 +7,8 @@ import Modal from 'react-bootstrap/Modal';
 
 function Home() {
     const [show, setShow] = useState(false);
-    const [product, setProduct] = useState([]);
+    const [products, setProducts] = useState([]); // All products
+    const [filteredProducts, setFilteredProducts] = useState([]); // Filtered products
     const [productDetails, setProductDetails] = useState({
         name: '',
         category: '',
@@ -16,6 +17,8 @@ function Home() {
         description: ''
     });
     const [editProductId, setEditProductId] = useState(null); // Track the id of the product to be updated
+    const [searchTerm, setSearchTerm] = useState(''); // Search term
+    const [selectedCategory, setSelectedCategory] = useState('all'); // Selected category
 
     // Handle modal visibility
     const handleClose = () => setShow(false);
@@ -38,22 +41,22 @@ function Home() {
         if (result.status >= 200 && result.status < 300) {
             alert('Product added successfully');
             setShow(false);
-            getAllProduct();
+            getAllProducts();
         }
     };
 
     // Fetch all products
-    const getAllProduct = async () => {
+    const getAllProducts = async () => {
         const result = await getProductApi();
-        setProduct(result.data);
+        setProducts(result.data);
+        setFilteredProducts(result.data); // Initially show all products
     };
 
     // Handle deleting a product
     const handleDelete = async (id) => {
         const result = await removeProduct(id);
         if (result.status >= 200 && result.status < 300) {
-            alert('Product deleted successfully');
-            getAllProduct();
+            getAllProducts();
         }
     };
 
@@ -64,7 +67,7 @@ function Home() {
         if (result.status >= 200 && result.status < 300) {
             alert('Product updated successfully');
             setShow(false);
-            getAllProduct();
+            getAllProducts();
         }
     };
 
@@ -81,8 +84,18 @@ function Home() {
         setShow(true); // Open the modal
     };
 
+    // Filter products based on search and category
     useEffect(() => {
-        getAllProduct();
+        const filtered = products.filter((product) => {
+            const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
+            const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
+            return matchesCategory && matchesSearch;
+        });
+        setFilteredProducts(filtered);
+    }, [searchTerm, selectedCategory, products]);
+
+    useEffect(() => {
+        getAllProducts();
     }, []);
 
     return (
@@ -95,9 +108,23 @@ function Home() {
                 </button>
             </div>
 
-            <h1 className="text-center mt-3">Products</h1>
+          
+           
 
-            {product?.length > 0 ? (
+            <h1 className="text-center mt-3">Products</h1>
+              {/* Search and Filter */}
+
+            <div className="d-flex justify-content-center align-items-center mt-2 w-75 ">
+                <input
+                    type="text" 
+                    className="form-control w-25 "
+                    placeholder="Search by product name"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+            </div>
+
+            {filteredProducts?.length > 0 ? (
                 <div className="d-flex justify-content-center align-items-center">
                     <table className="border border-1 p-5 text-center shadow mt-3">
                         <thead className="border border-2">
@@ -112,7 +139,7 @@ function Home() {
                             </tr>
                         </thead>
                         <tbody>
-                            {product?.map((item) => (
+                            {filteredProducts.map((item) => (
                                 <tr key={item.id}>
                                     <td className="p-4">{item.name}</td>
                                     <td className="p-4">{item.category}</td>
@@ -122,7 +149,7 @@ function Home() {
                                     <td className="p-4 text-center">
                                         <button
                                             type="button"
-                                            className="bg-danger border border-0"
+                                            className="bg-danger btn border border-0"
                                             onClick={() => handleDelete(item.id)}
                                         >
                                             <FontAwesomeIcon icon={faTrash} style={{ color: 'white' }} />
@@ -143,7 +170,7 @@ function Home() {
                     </table>
                 </div>
             ) : (
-                <h2>No products added...</h2>
+                <h2>No products found...</h2>
             )}
 
             {/* Modal for adding/updating product */}
